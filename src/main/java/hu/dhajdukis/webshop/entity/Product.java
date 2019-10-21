@@ -2,18 +2,17 @@ package hu.dhajdukis.webshop.entity;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 import hu.dhajdukis.webshop.dto.ProductDto;
 
 @Entity
 public class Product {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(unique = true)
     private String name;
     private BigDecimal currentPrice;
     private OffsetDateTime lastUpdate;
@@ -59,23 +58,5 @@ public class Product {
 
     public OffsetDateTime getLastUpdate() {
         return lastUpdate;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final Product product = (Product) o;
-
-        return name.equals(product.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return name.hashCode();
     }
 }

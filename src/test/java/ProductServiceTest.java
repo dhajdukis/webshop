@@ -1,6 +1,4 @@
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import hu.dhajdukis.webshop.dto.ProductDto;
@@ -12,6 +10,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.mockito.Mockito.when;
@@ -33,7 +33,7 @@ class ProductServiceTest {
         final ProductDto productDto = new ProductDto(null, "first", BigDecimal.valueOf(110L), null);
 
         final Exception exception = Assertions.assertThrows(IllegalArgumentException.class,
-                                                            () -> productService.updateProduct(1L, productDto));
+                () -> productService.updateProduct(1L, productDto));
         Assertions.assertEquals("Missing product id!", exception.getMessage());
     }
 
@@ -42,26 +42,25 @@ class ProductServiceTest {
         final ProductDto productDto = new ProductDto(2L, "first", BigDecimal.valueOf(110L), null);
 
         final Exception exception = Assertions.assertThrows(IllegalArgumentException.class,
-                                                            () -> productService.updateProduct(1L, productDto));
+                () -> productService.updateProduct(1L, productDto));
         Assertions.assertEquals("Given id: 1 is different than the product id 2 !", exception.getMessage());
     }
 
     @Test
     void update_product_other_product_exists_with_the_given_name() {
-        final ProductDto productDto = new ProductDto(1L, "second", BigDecimal.valueOf(110L), null);
+        final ProductDto productDto = new ProductDto(2L, "second", BigDecimal.valueOf(110L), null);
 
-        final Product product2 = new Product();
-        product2.setName("second");
-        product2.setId(2L);
+        final Optional<Product> productOpt = Optional.of(new Product());
 
-        List<Product> productsInDatabase = Collections.singletonList(product2);
+        when(productRepository.findById(2L)).thenReturn(productOpt);
 
-        when(productRepository.findByName("second")).thenReturn(productsInDatabase);
+        when(productRepository.save(Mockito.any(Product.class)))
+                .thenThrow(new DataIntegrityViolationException("Unique constraint violation!"));
 
         final Exception exception = Assertions.assertThrows(IllegalArgumentException.class,
-                                                            () -> productService.updateProduct(1L, productDto));
+                () -> productService.updateProduct(2L, productDto));
         Assertions.assertEquals("Product with the given name: second is exists with a different id!",
-                                exception.getMessage());
+                exception.getMessage());
     }
 
     @Test
@@ -73,7 +72,7 @@ class ProductServiceTest {
         when(productRepository.findById(1L)).thenReturn(productOpt);
 
         final Exception exception = Assertions.assertThrows(IllegalArgumentException.class,
-                                                            () -> productService.updateProduct(1L, productDto));
+                () -> productService.updateProduct(1L, productDto));
         Assertions.assertEquals("Product with the given id: 1 is not present!", exception.getMessage());
     }
 
@@ -100,18 +99,13 @@ class ProductServiceTest {
     void create_product_name_exists_in_the_database() {
         final ProductDto productDto = new ProductDto(null, "first", BigDecimal.valueOf(120L), null);
 
-        final Product product = new Product();
-        product.setName("first");
-        product.setId(1L);
-
-        List<Product> productsInDatabase = Collections.singletonList(product);
-
-        when(productRepository.findByName("first")).thenReturn(productsInDatabase);
+        when(productRepository.save(Mockito.any(Product.class)))
+                .thenThrow(new DataIntegrityViolationException("Unique constraint violation!"));
 
         final Exception exception = Assertions.assertThrows(IllegalArgumentException.class,
-                                                            () -> productService.createProduct(productDto));
+                () -> productService.createProduct(productDto));
         Assertions.assertEquals("Product with the given name: first is exists with a different id!",
-                                exception.getMessage());
+                exception.getMessage());
     }
 
     @Test
